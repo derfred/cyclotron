@@ -36,14 +36,18 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
     graph = nx.read_gpickle("%s/pruned_graphs/%d-%d.gpickle.bz2"%(basedir, vertex[0], vertex[1]))
     print "processing %s (%d nodes)"%(str(vertex), len(graph))
 
-    for clique in filter(valid_decoding, nx.cliques_containing_node(graph, vertex)):
-      print " is valid %s"%str(clique)
-      cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
-      solution      = Solution(problem_def, cycle_mapping)
-      solution.solve()
-      if solution.satisfiable():
-        print "  is consistent"
-        result.append(clique)
+    try:
+      for clique in filter(valid_decoding, nx.cliques_containing_node(graph, vertex)):
+        print " is valid %s"%str(clique)
+        cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
+        solution      = Solution(problem_def, cycle_mapping)
+        solution.solve()
+        if solution.satisfiable():
+          print "  is consistent"
+          result.append(clique)
+    except MemoryError, e:
+      sys.stderr.write("Failed because of insufficient memory on problem: %s basedir: %s max_len: %d my_slice: %d"%(sys.argv[1], basedir, max_len, my_slice))
+      sys.exit(127)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
   pickle.dump(result, f)
