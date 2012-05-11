@@ -4,8 +4,9 @@
 #
 import sys, os
 
-basedir = sys.argv[2]
-clique_size  = int(sys.argv[3])
+basedir     = sys.argv[2]
+max_len     = int(sys.argv[3])
+clique_size = int(sys.argv[4])
 
 ## when this job gets queued, nothing is known about the size of cliques
 ## therefore we might get started for a clique size that does not exist
@@ -21,7 +22,7 @@ from problem import *
 problem_def = read_problem_definition(sys.argv[1])
 
 with open("cycles.pickle") as f:
-  cycles = pickle.load(f)
+  cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
 total_slices = 399
 my_slice     = int(sys.argv[4])

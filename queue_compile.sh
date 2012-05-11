@@ -23,25 +23,25 @@ QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderr
 # first step, building association graph
 for i in {0..399}
 do
- $QSUB -N build_associations$JOBSUFFIX bash wrap_compile.sh sage build_graph.sage $PROBLEM.problem $BASE/$PROBLEM $i
+ $QSUB -N build_associations$JOBSUFFIX bash wrap_compile.sh sage build_graph.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # second step, induce subgraphs
 for i in {0..399}
 do
- $QSUB -N induce_subgraphs$JOBSUFFIX -hold_jid build_associations$JOBSUFFIX bash wrap_compile.sh python induce_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $i
+ $QSUB -N induce_subgraphs$JOBSUFFIX -hold_jid build_associations$JOBSUFFIX bash wrap_compile.sh python induce_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # third step, remove nodes which are not part of a valid clique
 for i in {0..399}
 do
-  $QSUB -N prune_subgraphs$JOBSUFFIX -hold_jid induce_subgraphs$JOBSUFFIX bash wrap_compile.sh python $PROBLEM.problem $BASE/$PROBLEM $i
+  $QSUB -N prune_subgraphs$JOBSUFFIX -hold_jid induce_subgraphs$JOBSUFFIX bash wrap_compile.sh python $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # fourth step, enumerate valid and consistent cliques
 for i in {0..399}
 do
-  $QSUB -N extract_cliques$JOBSUFFIX -hold_jid prune_subgraphs$JOBSUFFIX bash wrap_compile.sh sage extract_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $i
+  $QSUB -N extract_cliques$JOBSUFFIX -hold_jid prune_subgraphs$JOBSUFFIX bash wrap_compile.sh sage extract_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # # fifth step, deduplicate and sort cliques by size
@@ -52,6 +52,6 @@ for i in {0..399}
 do
   for j in {5..10}
   do
-    $QSUB -hold_jid dedup_cliques$JOBSUFFIX bash wrap_compile.sh sage filter_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $j $i
+    $QSUB -hold_jid dedup_cliques$JOBSUFFIX bash wrap_compile.sh sage filter_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $j $i
   done
 done

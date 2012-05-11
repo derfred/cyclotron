@@ -11,7 +11,7 @@ import itertools, time, operator, sys, os, string, pickle
 problem_def = read_problem_definition(sys.argv[1])
 
 with open("cycles.pickle") as f:
-  cycles = pickle.load(f)
+  cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
 # given two cycle mappings (result, cycle_index)
 # can they be part of a valid decoding?

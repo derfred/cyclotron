@@ -8,9 +8,10 @@ from problem import *
 import networkx as nx
 
 problem_def = read_problem_definition(sys.argv[1])
+max_len     = int(sys.argv[3])
 
 with open("cycles.pickle") as f:
-  cycles = pickle.load(f)
+  cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
 def index(comb):
   return comb[0]+comb[1]*len(cycles)
@@ -23,7 +24,7 @@ def valid_decoding(decoding):
 
 total_slices = 399
 basedir      = sys.argv[2]
-my_slice     = int(sys.argv[3])
+my_slice     = int(sys.argv[4])
 
 data = {}
 
@@ -42,4 +43,3 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
     print " removed %d nodes, remaining %d"%(total, len(graph))
 
     nx.write_gpickle(graph, "%s/pruned_graphs/%d-%d.gpickle.bz2"%(basedir, vertex[0], vertex[1]))
-

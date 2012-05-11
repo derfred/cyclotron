@@ -8,16 +8,17 @@ from problem import *
 import networkx as nx
 
 problem_def = read_problem_definition(sys.argv[1])
+max_len     = int(sys.argv[3])
 
 with open("cycles.pickle") as f:
-  cycles = pickle.load(f)
+  cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
 def index(comb):
   return comb[0]+comb[1]*len(cycles)
 
 total_slices = 399
 basedir      = sys.argv[2]
-my_slice     = int(sys.argv[3])
+my_slice     = int(sys.argv[4])
 
 @cache.lfu_cache(maxsize=2000)
 def load_neighbours(vertex):
