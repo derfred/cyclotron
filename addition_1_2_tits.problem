@@ -1,3 +1,4 @@
+# 1 tertiary digit plus 2 tertiary digit addition
 0:A1,A2,A3,I4,I5
 1:A1,A2,B3,I4,I5;B1,A2,A3,I4,I5
 2:A1,A2,C3,I4,I5;B1,A2,B3,I4,I5;C1,A2,A3,I4,I5

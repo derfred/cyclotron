@@ -1,3 +1,4 @@
+# 1 binary digit plus 2 binary digit addition
 0:A1,A2,A3,I4,I5
 1:A1,B2,A3,I4,I5;A1,A2,B3,I4,I5
 2:B1,A2,A3,I4,I5;A1,B2,B3,I4,I5
