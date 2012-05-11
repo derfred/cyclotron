@@ -9,6 +9,7 @@ from solution import Solution
 import itertools, time, operator, sys, os, string, pickle
 
 problem_def = read_problem_definition(sys.argv[1])
+max_len     = int(sys.argv[3])
 
 with open("cycles.pickle") as f:
   cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
@@ -39,7 +40,7 @@ def index(comb):
 all_combinations = list(itertools.product(problem_def.keys(), xrange(len(cycles))))
 total_slices     = 399
 basedir          = sys.argv[2]
-my_slice         = int(sys.argv[3])
+my_slice         = int(sys.argv[4])
 
 data = { "total_edges": 0 }
 
