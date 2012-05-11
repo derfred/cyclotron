@@ -21,6 +21,11 @@ Parameters:
  * max_len: maximum length of cycles to use for solving the problem
  * compile_id: (optional) when running multiple concurrent compiles this parameter is necessary for deconflicting the individual tasks
 
+Requirements
+============
+ * Python with NetworkX (http://networkx.lanl.gov/) library
+ * Sage (http://www.sagemath.org)
+
 
 Pipeline for finding decoding
 =============================
