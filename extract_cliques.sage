@@ -47,6 +47,8 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
           result.append(clique)
     except MemoryError, e:
       sys.stderr.write("Failed because of insufficient memory on problem: %s basedir: %s max_len: %d my_slice: %d"%(sys.argv[1], basedir, max_len, my_slice))
+      sys.stderr.write(" vertex: %s"%str(vertex))
+      sys.stderr.write(" clique: %s"%str(clique))
       sys.exit(127)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
