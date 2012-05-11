@@ -1,5 +1,5 @@
 #!/bin/sh
-ulimit -m 10000000
+ulimit -v 10000000
 
 case $1 in
   python)
