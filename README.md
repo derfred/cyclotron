@@ -11,7 +11,7 @@ Usage
 The classification problem is to be specified in a problem file. See *.problem for examples.
 
 To place the individual tasks in a processing queue run the following command:
-```ruby
+```bash
 bash queue_compile.sh <output_directory> <problem_file> <max_len> <compile_id>
 ```
 
