@@ -102,11 +102,11 @@ class Theta:
     boundary = params.get("T"+self.state.state, 0)
 
     if delta < boundary:
-      return [self.state.transition(left)]
+      return [self.state.transition(State.left)]
     elif delta > boundary:
-      return [self.state.transition(right)]
+      return [self.state.transition(State.right)]
     else:
-      return [self.state.transition(left), self.state.transition(right)]
+      return [self.state.transition(State.left), self.state.transition(State.right)]
 
 def part_of(cycle, allowed_cycles):
   for allowed_cycle in allowed_cycles:
