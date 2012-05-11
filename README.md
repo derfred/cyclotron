@@ -11,8 +11,9 @@ Usage
 The classification problem is to be specified in a problem file. See *.problem for examples.
 
 To place the individual tasks in a processing queue run the following command:
-
-  bash queue_compile.sh <output_directory> <problem_file> <max_len> <compile_id>
+```ruby
+bash queue_compile.sh <output_directory> <problem_file> <max_len> <compile_id>
+```
 
 Parameters:
  * output_directory: Intermediate and output files will be placed in the <problem_file> directory under this directory. This must be read/writable from all elements of the processing cluster
