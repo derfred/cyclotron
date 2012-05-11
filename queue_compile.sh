@@ -35,7 +35,7 @@ done
 # third step, remove nodes which are not part of a valid clique
 for i in {0..399}
 do
-  $QSUB -N prune_subgraphs$JOBSUFFIX -hold_jid induce_subgraphs$JOBSUFFIX bash wrap_compile.sh python $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
+  $QSUB -N prune_subgraphs$JOBSUFFIX -hold_jid induce_subgraphs$JOBSUFFIX bash wrap_compile.sh python prune_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # fourth step, enumerate valid and consistent cliques
