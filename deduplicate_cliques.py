@@ -14,8 +14,8 @@ for fname in os.listdir("%s/cliques/"%basedir):
   for clique in cliques:
     if len(clique) not in result:
       result[len(clique)] = set()
-    result[len(clique)].add(clique)
-
+    result[len(clique)].add(frozenset(clique))
+print len(result)
 for k, v in result.iteritems():
   with open("%s/unique_cliques/%d.pickle"%(basedir, k), "w") as f:
     pickle.dump(list(v), f)
