@@ -26,11 +26,18 @@ def valid_decoding(decoding):
   return set(map(operator.itemgetter(0), decoding)) == set(problem_def.keys())
 
 def subgraph_cliques(graph, center_vertex, testfn):
-  for node in graph.nodes_iter():
-    if node != center_vertex:
-      subgraph = graph.subgraph( set(graph.neighbors(node)) & set(graph.neighbors(center_vertex)) )
-      for clique in filter(testfn, nx.find_cliques(subgraph)):
-        yield frozenset(clique)
+  # should be able to process a 100 vertex graph no problem
+  if len(graph) < 100:
+    for clique in filter(testfn, nx.find_cliques(subgraph)):
+      yield frozenset(clique)
+  else:
+    # if larger than 100 vertices, decompose into vertex induced subgraphs
+    for node in graph.nodes_iter():
+      if node != center_vertex:
+        vertices = set(graph.neighbors(node)) & set(graph.neighbors(center_vertex))
+        subgraph = graph.subgraph( vertices.union(set([node, center_vertex])) )
+        for clique in filter(testfn, nx.find_cliques(subgraph)):
+          yield frozenset(clique)
 
 result = set()
 
