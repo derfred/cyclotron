@@ -26,18 +26,9 @@ def valid_decoding(decoding):
   return set(map(operator.itemgetter(0), decoding)) == set(problem_def.keys())
 
 def subgraph_cliques(graph, center_vertex, testfn):
-  try:
-    for clique in filter(testfn, nx.find_cliques(subgraph)):
-      yield frozenset(clique)
-  except MemoryError, e:
-    # full processing not working for memory constraint reasons
-    for node in graph.nodes_iter():
-      if node != center_vertex:
-        vertices = set(graph.neighbors(node)) & set(graph.neighbors(center_vertex))
-        subgraph = graph.subgraph( vertices.union(set([node, center_vertex])) )
-        for clique in filter(testfn, nx.find_cliques(subgraph)):
-          yield frozenset(clique)
-
+  sage_graph = Graph(graph)
+  for clique in filter(testfn, sage.graphs.cliquer.all_max_clique(sage_graph)):
+    yield frozenset(clique)
 
 result = set()
 
@@ -51,7 +42,7 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
     graph.name = str(vertex) # there is something odd going on in subgraph, which requires the graph to have a name
     print "processing %s (%d nodes)"%(str(vertex), len(graph))
 
-    for clique in subgraph_cliques(graph, vertex, valid_decoding):
+    for clique in subgraph_cliques_sage(graph, vertex, valid_decoding):
       print " is valid %s"%str(clique)
       cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
       solution      = Solution(problem_def, cycle_mapping)
