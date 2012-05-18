@@ -47,11 +47,5 @@ done
 # fifth step, deduplicate and sort cliques by size
 $QSUB -N dedup_cliques$JOBSUFFIX -hold_jid extract_cliques$JOBSUFFIX bash wrap_compile.sh python deduplicate_cliques.py $BASE/$PROBLEM
 
-# sixth step, find complete cliques
-for i in {0..399}
-do
-  for j in {5..10}
-  do
-    $QSUB -hold_jid dedup_cliques$JOBSUFFIX bash wrap_compile.sh sage filter_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $j $i
-  done
-done
+# queue sixth step, find complete cliques
+$QSUB -N queue_filter$JOBSUFFIX -hold_jid dedup_cliques$JOBSUFFIX bash queue_filter.sh $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $JOBSUFFIX
