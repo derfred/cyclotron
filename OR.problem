@@ -1,0 +1,3 @@
+# OR problem
+0:A1,A2,I3,I4,I5
+1:A1,B2,I3,I4,I5;B1,A2,I3,I4,I5;B1,B2,I3,I4,I5
