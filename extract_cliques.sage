@@ -42,7 +42,7 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
     graph.name = str(vertex) # there is something odd going on in subgraph, which requires the graph to have a name
     print "processing %s (%d nodes)"%(str(vertex), len(graph))
 
-    for clique in subgraph_cliques_sage(graph, vertex, valid_decoding):
+    for clique in subgraph_cliques(graph, vertex, valid_decoding):
       print " is valid %s"%str(clique)
       cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
       solution      = Solution(problem_def, cycle_mapping)
