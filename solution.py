@@ -166,20 +166,22 @@ class Solution:
 
     return self.consistent
 
+  def transition_graph(self, input):
+    params = self.solution()
+    result = nx.DiGraph()
+    for theta in self.thetas.itervalues():
+      for out in theta.switch(input, params):
+        result.add_edge(theta.state.state, out.state)
+    return result
+
   def verifies(self):
     if not self.satisfiable():
       raise Exception("this solution is not satisfiable")
 
-    params = self.solution()
-
     for result, inputs in self.problem.iteritems():
       allowed_cycles = map(operator.itemgetter(1), filter(lambda a: a[0] == result, self.decoding))
       for input in inputs:
-        G = nx.DiGraph()
-        
-        for theta in self.thetas.itervalues():
-          for out in theta.switch(input, params):
-            G.add_edge(theta.state.state, out.state)
+        G = self.transition_graph(input)
 
         actual_cycles = map(lambda c: c[0:-1], simple_cycles(G))
         for cycle in actual_cycles:
