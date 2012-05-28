@@ -26,9 +26,10 @@ def valid_decoding(decoding):
   return set(map(operator.itemgetter(0), decoding)) == set(problem_def.keys())
 
 def subgraph_cliques(graph, center_vertex, testfn):
-  sage_graph = Graph(graph)
-  for clique in filter(testfn, sage.graphs.cliquer.all_max_clique(sage_graph)):
-    yield frozenset(clique)
+  if len(graph) > 0:
+    sage_graph = Graph(graph)
+    for clique in filter(testfn, sage.graphs.cliquer.all_max_clique(sage_graph)):
+      yield frozenset(clique)
 
 result = set()
 
