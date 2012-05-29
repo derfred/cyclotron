@@ -116,7 +116,7 @@ def part_of(cycle, allowed_cycles):
   return False
 
 class Solution:
-  def __init__(self, problem, decoding):
+  def __init__(self, problem, decoding=[]):
     self.program = None
 
     self.problem  = problem
