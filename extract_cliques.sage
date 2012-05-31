@@ -16,7 +16,7 @@ with open("cycles.pickle") as f:
   cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
 def index(comb):
-  return comb[0]+comb[1]*len(cycles)
+  return comb[1]+comb[0]*len(cycles)
 
 # Are all potential results represented in the decoding?
 def valid_decoding(decoding):

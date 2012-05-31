@@ -35,7 +35,7 @@ def cycles_compatible(left, right):
     return solution.satisfiable()
 
 def index(comb):
-  return comb[0]+comb[1]*len(cycles)
+  return comb[1]+comb[0]*len(cycles)
 
 all_combinations = list(itertools.product(problem_def.keys(), xrange(len(cycles))))
 total_slices     = 399
