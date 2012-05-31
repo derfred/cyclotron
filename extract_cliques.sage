@@ -26,7 +26,7 @@ def valid_decoding(decoding):
   return set(map(operator.itemgetter(0), decoding)) == set(problem_def.keys())
 
 def subgraph_cliques(graph, center_vertex, testfn):
-  for clique in filter(testfn, nx.find_cliques(subgraph)):
+  for clique in filter(testfn, nx.find_cliques(graph)):
     yield frozenset(clique)
 
 def consistent_subcliques(clique):
@@ -39,7 +39,7 @@ def consistent_subcliques(clique):
   else:
     redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
     for assignment in itertools.chain(*redundant_assignments):
-      consistent_subcliques(clique-assignment)
+      consistent_subcliques(clique-frozenset([assignment]))
 
 
 result = set()
