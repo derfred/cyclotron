@@ -43,8 +43,5 @@ for i in xrange(len(cliques)):
       print " found one!"
       result.append(clique)
 
-if not os.path.exists("%s/filtered_cliques/%d/"%(basedir, clique_size)):
-  os.mkdir("%s/filtered_cliques/%d/"%(basedir, clique_size))
-
 with open("%s/filtered_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
   pickle.dump(result, f)

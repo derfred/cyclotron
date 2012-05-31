@@ -13,6 +13,7 @@ QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderr
 # step six, filter incomplete cliques
 for d in `ls $BASE/$PROBLEM/unique_cliques`
 do
+  mkdir -p $BASE/$PROBLEM/filtered_cliques/${d/.pickle/}
   for i in {0..399}
   do
     $QSUB -N filter_cliques$JOBSUFFIX bash wrap_compile.sh sage filter_complete_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/} $i
