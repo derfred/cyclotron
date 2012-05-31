@@ -29,6 +29,19 @@ def subgraph_cliques(graph, center_vertex, testfn):
   for clique in filter(testfn, nx.find_cliques(subgraph)):
     yield frozenset(clique)
 
+def consistent_subcliques(clique):
+  cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
+  solution      = Solution(problem_def, cycle_mapping)
+  solution.solve()
+
+  if solution.satisfiable():
+    yield clique
+  else:
+    redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
+    for assignment in itertools.chain(*redundant_assignments):
+      consistent_subcliques(clique-assignment)
+
+
 result = set()
 
 total_slices = 399
@@ -43,10 +56,7 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
 
     for clique in subgraph_cliques(graph, vertex, valid_decoding):
       print " is valid %s"%str(clique)
-      cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
-      solution      = Solution(problem_def, cycle_mapping)
-      solution.solve()
-      if solution.satisfiable():
+      for subclique in consistent_subcliques(clique):
         print "  is consistent"
         result.add(clique)
 
