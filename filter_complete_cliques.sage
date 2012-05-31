@@ -2,30 +2,20 @@
 # Fifth (and last) step of the decoding finding pipeline. usage:
 #  sage -python filter_cliques.sage <problem_def> <basedir> <clique_size> <worker_index>
 #
-import sys, os
-
-basedir     = sys.argv[2]
-max_len     = int(sys.argv[3])
-clique_size = int(sys.argv[4])
-
-## when this job gets queued, nothing is known about the size of cliques
-## therefore we might get started for a clique size that does not exist
-## so just exit gracefully if that is the case
-if not os.path.exists("%s/unique_cliques/%d.pickle"%(basedir, clique_size)):
-  sys.exit(0)
-
-## real program starts here
-import pickle
+import pickle, sys, os
 from solution import Solution
 from problem import *
 
 problem_def = read_problem_definition(sys.argv[1])
+basedir     = sys.argv[2]
+max_len     = int(sys.argv[3])
+clique_size = int(sys.argv[4])
 
 with open("cycles.pickle") as f:
   cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
 total_slices = 399
-my_slice     = int(sys.argv[4])
+my_slice     = int(sys.argv[5])
 
 with open("%s/unique_cliques/%d.pickle"%(basedir, clique_size)) as f:
   cliques = pickle.load(f)
