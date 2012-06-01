@@ -29,7 +29,7 @@ def subgraph_cliques(graph, center_vertex, testfn):
   for clique in filter(testfn, nx.find_cliques(graph)):
     yield frozenset(clique)
 
-def consistent_subcliques(clique, processed=None):
+def consistent_subcliques(clique, center_vertex, processed=None):
   if processed == None:
     processed = set()
 
@@ -45,8 +45,9 @@ def consistent_subcliques(clique, processed=None):
     redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
     for assignment in itertools.chain(*redundant_assignments):
       child = clique-frozenset([assignment])
-      if child not in processed:
-        for subclique in consistent_subcliques(child, processed):
+      # dont double process subcliques, and dont remove the center vertex
+      if child not in processed and assignment != center_vertex:
+        for subclique in consistent_subcliques(child, center_vertex, processed):
           yield subclique
 
 
@@ -60,13 +61,12 @@ my_slice     = int(sys.argv[4])
 for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
   if index(vertex) % total_slices == my_slice:
     graph = nx.read_gpickle("%s/pruned_graphs/%d-%d.gpickle.bz2"%(basedir, vertex[0], vertex[1]))
-    graph.name = str(vertex) # there is something odd going on in subgraph, which requires the graph to have a name
     print "processing %s (%d nodes)"%(str(vertex), len(graph))
 
     for clique in subgraph_cliques(graph, vertex, valid_decoding):
       print " is valid %s"%str(clique)
-      for subclique in consistent_subcliques(clique):
-        print "  is consistent"
+      for subclique in consistent_subcliques(clique, vertex):
+        print "  is consistent %s"%str(subclique)
         result.add(subclique)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
