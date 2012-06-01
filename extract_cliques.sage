@@ -60,7 +60,7 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
       print " is valid %s"%str(clique)
       for subclique in consistent_subcliques(clique):
         print "  is consistent"
-        result.add(clique)
+        result.add(subclique)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
   pickle.dump(list(result), f)
