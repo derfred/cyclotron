@@ -39,8 +39,9 @@ def consistent_subcliques(clique, depth=0):
   else:
     redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
     for assignment in itertools.chain(*redundant_assignments):
-      for result in consistent_subcliques(clique-frozenset([assignment]), depth+1):
-        yield result
+      for subclique in consistent_subcliques(clique-frozenset([assignment]), depth+1):
+        if subclique not in result:
+          yield result
 
 
 result = set()
