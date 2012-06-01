@@ -29,6 +29,27 @@ def subgraph_cliques(graph, center_vertex, testfn):
   for clique in filter(testfn, nx.find_cliques(graph)):
     yield frozenset(clique)
 
+def consistent_subcliques(clique, processed=None):
+  if processed == None:
+    processed = set()
+
+  cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
+  solution      = Solution(problem_def, cycle_mapping)
+  solution.solve()
+
+  processed.add(clique)
+
+  if solution.satisfiable():
+    yield clique
+  else:
+    redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
+    for assignment in itertools.chain(*redundant_assignments):
+      child = clique-frozenset([assignment])
+      if child not in processed:
+        for subclique in consistent_subcliques(child, processed):
+          yield subclique
+
+
 def consistent_subcliques(clique, depth=0):
   cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
   solution      = Solution(problem_def, cycle_mapping)
@@ -40,8 +61,7 @@ def consistent_subcliques(clique, depth=0):
     redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
     for assignment in itertools.chain(*redundant_assignments):
       for subclique in consistent_subcliques(clique-frozenset([assignment]), depth+1):
-        if subclique not in result:
-          yield result
+        yield subclique
 
 
 result = set()
