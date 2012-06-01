@@ -29,28 +29,12 @@ def subgraph_cliques(graph, center_vertex, testfn):
   for clique in filter(testfn, nx.find_cliques(graph)):
     yield frozenset(clique)
 
-def consistent_subcliques(clique, center_vertex, processed=None):
-  if processed == None:
-    processed = set()
-
-  cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
-  solution      = Solution(problem_def, cycle_mapping)
-  solution.solve()
-
-  processed.add(clique)
-
-  if solution.satisfiable():
-    yield clique
-  else:
-    redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r, clique), problem_def.keys()))
-    for assignment in itertools.chain(*redundant_assignments):
-      child = clique-frozenset([assignment])
-      # dont double process subcliques, and dont remove the center vertex
-      if child not in processed and assignment != center_vertex:
-        for subclique in consistent_subcliques(child, center_vertex, processed):
-          yield subclique
-
-
+def subcombine(clique, center_vertex):
+  # dont remove the center vertex
+  redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r and a != center_vertex, clique), problem_def.keys()))
+  children              = list(itertools.chain(*map(lambda c: subcombine(clique-frozenset([c]), center_vertex), itertools.chain(*redundant_assignments))))
+  # use list/set to remove duplicates
+  return reversed(sorted(list(set([clique] + children)), key=len))
 
 result = set()
 
@@ -65,9 +49,17 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
 
     for clique in subgraph_cliques(graph, vertex, valid_decoding):
       print " is valid %s"%str(clique)
-      for subclique in consistent_subcliques(clique, vertex):
-        print "  is consistent %s"%str(subclique)
-        result.add(subclique)
+      consistents = set()
+      for subclique in subcombine(clique, vertex):
+        # we dont need to process a subclique in case a super-clique has been found to be consistent
+        if not any(subclique < c for c in consistents):
+          cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), subclique)
+          solution      = Solution(problem_def, cycle_mapping)
+          solution.solve()
+          if solution.satisfiable():
+            print "  is consistent %s"%str(subclique)
+            consistents.add(subclique)
+            result.add(subclique)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
   pickle.dump(list(result), f)
