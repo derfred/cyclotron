@@ -36,7 +36,7 @@ def subcombine(clique, center_vertex):
   # use list/set to remove duplicates
   return reversed(sorted(list(set([clique] + children)), key=len))
 
-result = set()
+output = set()
 
 total_slices = 399
 basedir      = sys.argv[2]
@@ -59,7 +59,7 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
           if solution.satisfiable():
             print "  is consistent %s"%str(subclique)
             consistents.add(subclique)
-            result.add(subclique)
+            output.add(subclique)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
-  pickle.dump(list(result), f)
+  pickle.dump(list(output), f)
