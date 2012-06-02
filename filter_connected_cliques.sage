@@ -1,6 +1,6 @@
 #
 # Sixth (and last) step of the decoding finding pipeline. usage:
-#  sage filter_connected_cliques.sage <problem_def> <basedir> <clique_size> <worker_index>
+#  sage filter_connected_cliques.sage <problem_def> <basedir> <max_len> <clique_size> <worker_index>
 #
 
 import pickle, sys, os, itertools, operator
@@ -11,16 +11,14 @@ import networkx as nx
 
 problem_def = read_problem_definition(sys.argv[1])
 basedir     = sys.argv[2]
-clique_size = int(sys.argv[3])
+max_len     = int(sys.argv[3])
+clique_size = int(sys.argv[4])
 
 with open("cycles.pickle") as f:
-  cycles = pickle.load(f)
+  cycles = filter(lambda c: len(c) <= max_len, pickle.load(f))
 
-total_slices = 399
-my_slice     = int(sys.argv[4])
-
-#with open("%s/unique_cliques/%d.pickle"%(basedir, clique_size)) as f:
- # cliques = pickle.load(f)
+with open("%s/unique_cliques/%d.pickle"%(basedir, clique_size)) as f:
+  cliques = pickle.load(f)
 
 def find_cycle_target(state, cycle):
   _state = State(state)
@@ -122,8 +120,8 @@ def subcombine(clique, center_vertex=None):
   return reversed(sorted(list(set([clique] + children)), key=len))
 
 
-with open("392.pickle") as f:
-  cliques = pickle.load(f)
+total_slices = 399
+my_slice     = int(sys.argv[5])
 
 output = set()
 
