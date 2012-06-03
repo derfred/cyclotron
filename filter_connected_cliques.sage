@@ -4,7 +4,7 @@
 #
 
 import pickle, sys, os, itertools, operator
-from solution import Solution
+from solution import *
 from problem import *
 from state import State
 import networkx as nx
@@ -39,86 +39,89 @@ def find_possible_transitions(cycle_mapping, my_cycles, input):
       if solution.satisfiable():
         yield (state, out_state)
 
-def build_targets_graph(cycle_mapping, my_cycles, input):
+def build_transition_graph(cycle_mapping, my_cycles, input):
   graph = nx.DiGraph()
-  for i in range(len(my_cycles)):
-    graph.add_node("target%i"%i, target=True)
+  for cycle in my_cycles:
+    for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
+      graph.add_edge(prev, next)
 
   for prev, next in find_possible_transitions(cycle_mapping, my_cycles, input):
-    if next not in itertools.chain(*my_cycles):
-      graph.add_edge(prev, next)
-    else:
-      for i in range(len(my_cycles)):
-        if next in my_cycles[i]:
-          graph.add_edge(prev, "target%i"%i)
+    graph.add_edge(prev, next)
 
   return graph
 
-def transitions_from_cycle(cycle):
-  return zip(cycle, cycle[1:]+cycle[:1])
-
-def transitions_from_path(path):
-  return zip(path, path[1:]+path[:1])[:-1]
-
-def find_target_paths(graph, state, cycles):
-  result = []
-  nx.write_graphml(graph, "test.graphml")
-  for target in filter(lambda n: "target" in n[1], graph.nodes(data=True)):
-    path = nx.shortest_path(graph, state, target[0])
-    if path:
-      cycle = cycles[int(target[0].replace("target", ""))]
-      result.append( path[:-1]+[find_cycle_target(path[-2], cycle)] )
-  return result
-
-def required_transitions(clique):
-  cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), clique)
-
-  requirements = {}
+def potentially_connected(clique):
+  graphs = {}
+  cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
   for result, inputs in problem_def.iteritems():
-    my_cycles    = map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping))
+    my_cycles    = tuple(map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping)))
     other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
     for input in inputs:
-      requirements[input] = []
-
-      # first require the cycles to exist
-      requirements[input].append([list(itertools.chain(*map(transitions_from_cycle, my_cycles)))])
-
-      # next require a path from every other cycle state to one of the target cycles
-      # if such a path does not exist for one of the states, this clique is not connected
-      graph   = build_targets_graph(cycle_mapping, my_cycles, input)
+      graph = build_transition_graph(cycle_mapping, my_cycles, input)
       if graph.number_of_edges() == 0:
         return False
 
-      origins = set(itertools.chain(*other_cycles)) - set(itertools.chain(*my_cycles))
-      for paths in map(lambda s: find_target_paths(graph, s, my_cycles), origins):
-        if len(paths) == 0:
-          # for this state there is no conceivable path to a valid cycle for the current input
+      graphs[(result, input, my_cycles)] = graph
+      for state in set(itertools.chain(*other_cycles)) - set(itertools.chain(*my_cycles)):
+        if all( nx.shortest_path(graph, state, cycle[0]) == False for cycle in my_cycles ):
           return False
-        else:
-          requirements[input].append(map(transitions_from_path, paths))
-  return requirements
+  return graphs
 
-def satisfiable_transitions(transitions):
-  possibles = []
-  for input, paths in transitions.iteritems():
-    possibles.append( map(lambda p: (input, list(itertools.chain(*p))), itertools.product(*paths)) )
-  for setup in itertools.product(*possibles):
-    solution = Solution(problem_def)
-    for input, paths in setup:
-      for prev, next in paths:
-        solution.add(prev, next, input)
-    solution.solve()
-    if solution.satisfiable():
-      return True
-  return False
+
+def remove_cycles(graph, my_cycles):
+  def potential_cycles_match(graph, expected_cycles):
+    # ordering doesn't matter in this comparison, as it is implied by the structure of the state graph
+    return set(map(lambda c: frozenset(c[:-1]), simple_cycles(graph))) == set(map(frozenset, expected_cycles))
+
+  def next_transition_to_remove(graph, my_cycles):
+    def non_essential(transition, cycles, graph):
+      _graph = graph.copy()
+      _graph.remove_edge(*transition)
+      return any( nx.shortest_path(_graph, transition[0], cycle[0]) for cycle in cycles )
+
+    # first build list of possible transitions to remove
+    transitions = list(itertools.chain(*map(lambda n: map(lambda nn: (n, nn), graph[n]), filter(lambda n: len(graph[n]) == 2, graph))))
+
+    # if there are no transitions....
+    if len(transitions) == 0:
+      return
+
+    # now the magic happens
+    spurious_cycles = set(filter(lambda c: c not in my_cycles, map(lambda c: tuple(c[:-1]), simple_cycles(graph))))
+    transitions = filter(lambda t: non_essential(t, my_cycles, graph), transitions)
+    return sorted(transitions, key=lambda t: len(filter(lambda c: t[0] in c, spurious_cycles)), reverse=True)[0]
+
+  def opposite_of(transition):
+    return (transition[0], list(set(State.graph[transition[0]].keys())-set([transition[1]]))[0])
+
+  while not potential_cycles_match(graph, my_cycles):
+    to_remove = next_transition_to_remove(graph, my_cycles)
+    if to_remove == None:
+      # if this clique is potentially connected, we should never get here
+      raise "failed"
+    yield opposite_of(to_remove)
+    graph.remove_edge(*to_remove)
+
+def connected(graphs):
+  solution = Solution(problem_def)
+  for setup, graph in graphs.iteritems():
+    for cycle in setup[2]:
+      for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
+        solution.add(prev, next, setup[1])
+
+    for prev, next in remove_cycles(graph, setup[2]):
+      solution.add(prev, next, setup[1])
+
+  solution.solve()
+  return solution.satisfiable()
+
 
 def subcombine(clique, center_vertex=None):
   # dont remove the center vertex
   redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r and a != center_vertex, clique), problem_def.keys()))
   children              = list(itertools.chain(*map(lambda c: subcombine(clique-frozenset([c]), center_vertex), itertools.chain(*redundant_assignments))))
   # use list/set to remove duplicates
-  return reversed(sorted(list(set([clique] + children)), key=len))
-
+  return sorted(list(set([clique] + children)), key=len, reverse=True)
 
 total_slices = 399
 my_slice     = int(sys.argv[5])
@@ -126,17 +129,16 @@ my_slice     = int(sys.argv[5])
 output = set()
 
 for i in xrange(len(cliques)):
-  if i % total_slices == my_slice:
+  if i % total_slices == my_slice or True:
     clique        = cliques[i]
     print "starting %d %s"%(i, str(clique))
     for subclique in subcombine(clique):
-      transitions = required_transitions(subclique)
-      if transitions != False:
+      graphs = potentially_connected(subclique)
+      if graphs:
         print " is potentially connected %s"%str(subclique)
-        if satisfiable_transitions(transitions):
+        if connected(graphs):
           print "  got a winner %s"%str(subclique)
           output.add(subclique)
-   
 
 with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
   pickle.dump(output, f)
