@@ -14,6 +14,7 @@ QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderr
 for d in `ls $BASE/$PROBLEM/unique_cliques`
 do
   mkdir -p $BASE/$PROBLEM/connected_cliques/${d/.pickle/}
+  mkdir -p $BASE/$PROBLEM/potentially_connected_cliques/${d/.pickle/}
   for i in {0..399}
   do
     $QSUB -N filter_connected_cliques$JOBSUFFIX bash wrap_compile.sh sage filter_connected_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/} $i

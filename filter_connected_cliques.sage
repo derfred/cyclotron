@@ -126,7 +126,8 @@ def subcombine(clique, center_vertex=None):
 total_slices = 399
 my_slice     = int(sys.argv[5])
 
-output = set()
+output      = set()
+potentially = set()
 
 for i in xrange(len(cliques)):
   if i % total_slices == my_slice or True:
@@ -136,9 +137,13 @@ for i in xrange(len(cliques)):
       graphs = potentially_connected(subclique)
       if graphs:
         print " is potentially connected %s"%str(subclique)
+        potentially.add(subclique)
         if connected(graphs):
           print "  got a winner %s"%str(subclique)
           output.add(subclique)
+
+with open("%s/potentially_connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
+  pickle.dump(potentially, f)
 
 with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
   pickle.dump(output, f)
