@@ -7,6 +7,12 @@ import pickle, os, time, operator, sys
 
 basedir = sys.argv[1]
 
+with open("cycles.pickle") as f:
+  cycles = pickle.load(f)
+
+def index(comb):
+  return comb[1]+comb[0]*len(cycles)
+
 result = {}
 for fname in os.listdir("%s/cliques/"%basedir):
   with open("%s/cliques/%s"%(basedir, fname)) as f:
@@ -14,7 +20,7 @@ for fname in os.listdir("%s/cliques/"%basedir):
   for clique in cliques:
     if len(clique) not in result:
       result[len(clique)] = set()
-    result[len(clique)].add(frozenset(clique))
+    result[len(clique)].add(tuple(sorted(clique, key=index)))
 print len(result)
 for k, v in result.iteritems():
   with open("%s/unique_cliques/%d.pickle"%(basedir, k), "w") as f:
