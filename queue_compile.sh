@@ -45,7 +45,7 @@ do
 done
 
 # fifth step, deduplicate and sort cliques by size
-$QSUB -N dedup_cliques$JOBSUFFIX -hold_jid extract_cliques$JOBSUFFIX bash wrap_compile.sh python deduplicate_cliques.py $BASE/$PROBLEM
+$QSUB -N dedup_cliques$JOBSUFFIX -hold_jid extract_cliques$JOBSUFFIX bash wrap_compile.sh python deduplicate_cliques.py $BASE/$PROBLEM cliques unique_cliques
 
 # queue sixth step, find complete cliques
 $QSUB -N queue_filter$JOBSUFFIX -hold_jid dedup_cliques$JOBSUFFIX bash queue_complete_filter.sh $BASE $PROBLEM $MAXLEN $JOBSUFFIX
