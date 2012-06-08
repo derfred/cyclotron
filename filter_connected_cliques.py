@@ -1,10 +1,10 @@
 #
 # Sixth (and last) step of the decoding finding pipeline. usage:
-#  sage filter_connected_cliques.sage <problem_def> <basedir> <max_len> <clique_size> <worker_index>
+#  python filter_connected_cliques.py <problem_def> <basedir> <max_len> <clique_size> <worker_index>
 #
 
 import pickle, sys, os, itertools, operator
-from solution import *
+from inequality_decider import *
 from problem import *
 from state import State
 import networkx as nx
@@ -20,32 +20,20 @@ with open("cycles.pickle") as f:
 with open("%s/unique_cliques/%d.pickle"%(basedir, clique_size)) as f:
   cliques = pickle.load(f)
 
-def find_cycle_target(state, cycle):
-  _state = State(state)
-  for dir in  [State.left, State.right]:
-    out_state = _state.transition(dir).state
-    if out_state in cycle:
-      return out_state
-  print "fail", state, cycle
-  asd
-
-def find_possible_transitions(cycle_mapping, my_cycles, input):
+def find_possible_transitions(base_decider, my_cycles, input):
   all_states = set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"])))
   for state in all_states-set(itertools.chain(*my_cycles)):
     for out_state in State.graph[state]:
-      solution = Solution(problem_def, cycle_mapping)
-      solution.add(state, out_state, input)
-      solution.solve()
-      if solution.satisfiable():
+      if base_decider.satisfiable_with(state, out_state, input):
         yield (state, out_state)
 
-def build_transition_graph(cycle_mapping, my_cycles, input):
+def build_transition_graph(base_decider, my_cycles, input):
   graph = nx.DiGraph()
   for cycle in my_cycles:
     for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
       graph.add_edge(prev, next)
 
-  for prev, next in find_possible_transitions(cycle_mapping, my_cycles, input):
+  for prev, next in find_possible_transitions(base_decider, my_cycles, input):
     graph.add_edge(prev, next)
 
   return graph
@@ -53,17 +41,22 @@ def build_transition_graph(cycle_mapping, my_cycles, input):
 def potentially_connected(clique):
   graphs = {}
   cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
+
+  decider = InequalityDecider()
+  decider.add_cycle_mapping(problem_def, cycle_mapping)
+  base_decider = decider.freeze()
+
   for result, inputs in problem_def.iteritems():
     my_cycles    = tuple(map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping)))
     other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
     for input in inputs:
-      graph = build_transition_graph(cycle_mapping, my_cycles, input)
+      graph = build_transition_graph(base_decider, my_cycles, input)
       if graph.number_of_edges() == 0:
         return False
 
       graphs[(result, input, my_cycles)] = graph
       for state in set(itertools.chain(*other_cycles)) - set(itertools.chain(*my_cycles)):
-        if all( nx.shortest_path(graph, state, cycle[0]) == False for cycle in my_cycles ):
+        if all( nx.has_path(graph, state, cycle[0]) == False for cycle in my_cycles ):
           return False
   return graphs
 
@@ -77,7 +70,7 @@ def remove_cycles(graph, my_cycles):
     def non_essential(transition, cycles, graph):
       _graph = graph.copy()
       _graph.remove_edge(*transition)
-      return any( nx.shortest_path(_graph, transition[0], cycle[0]) for cycle in cycles )
+      return any( nx.has_path(_graph, transition[0], cycle[0]) for cycle in cycles )
 
     # first build list of possible transitions to remove
     transitions = list(itertools.chain(*map(lambda n: map(lambda nn: (n, nn), graph[n]), filter(lambda n: len(graph[n]) == 2, graph))))
@@ -103,17 +96,16 @@ def remove_cycles(graph, my_cycles):
     graph.remove_edge(*to_remove)
 
 def connected(graphs):
-  solution = Solution(problem_def)
+  decider = InequalityDecider()
   for setup, graph in graphs.iteritems():
     for cycle in setup[2]:
       for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
-        solution.add(prev, next, setup[1])
+        decider.add(prev, next, setup[1])
 
     for prev, next in remove_cycles(graph, setup[2]):
-      solution.add(prev, next, setup[1])
+      decider.add(prev, next, setup[1])
 
-  solution.solve()
-  return solution.satisfiable()
+  return decider.satisfiable()
 
 
 def subcombine(clique, center_vertex=None):

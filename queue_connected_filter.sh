@@ -17,6 +17,6 @@ do
   mkdir -p $BASE/$PROBLEM/potentially_connected_cliques/${d/.pickle/}
   for i in {0..399}
   do
-    $QSUB -N filter_connected_cliques$JOBSUFFIX bash wrap_compile.sh sage filter_connected_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/} $i
+    $QSUB -N filter_connected_cliques$JOBSUFFIX bash wrap_compile.sh python filter_connected_cliques.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/} $i
   done
 done

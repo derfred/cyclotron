@@ -18,7 +18,7 @@ def make_pairs(ineq):
   for m1, m2, s in [ (0,1,2), (1,2,0), (2,0,1) ]:
     yield ( (ineq[m1], ineq[m2]), ineq[s] )
 
-class Decider:
+class InequalityDecider:
   def __init__(self):
     self.pairs = {}
 
