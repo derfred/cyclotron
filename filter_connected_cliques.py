@@ -64,7 +64,7 @@ def potentially_connected(clique):
 def remove_cycles(graph, my_cycles):
   def potential_cycles_match(graph, expected_cycles):
     # ordering doesn't matter in this comparison, as it is implied by the structure of the state graph
-    return set(map(lambda c: frozenset(c[:-1]), simple_cycles(graph))) == set(map(frozenset, expected_cycles))
+    return set(map(lambda c: frozenset(c[:-1]), nx.simple_cycles(graph))) == set(map(frozenset, expected_cycles))
 
   def next_transition_to_remove(graph, my_cycles):
     def non_essential(transition, cycles, graph):
@@ -80,7 +80,7 @@ def remove_cycles(graph, my_cycles):
       return
 
     # now the magic happens
-    spurious_cycles = set(filter(lambda c: c not in my_cycles, map(lambda c: tuple(c[:-1]), simple_cycles(graph))))
+    spurious_cycles = set(filter(lambda c: c not in my_cycles, map(lambda c: tuple(c[:-1]), nx.simple_cycles(graph))))
     transitions = filter(lambda t: non_essential(t, my_cycles, graph), transitions)
     return sorted(transitions, key=lambda t: len(filter(lambda c: t[0] in c, spurious_cycles)), reverse=True)[0]
 
