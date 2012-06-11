@@ -122,7 +122,7 @@ output      = set()
 potentially = set()
 
 for i in xrange(len(cliques)):
-  if i % total_slices == my_slice or True:
+  if i % total_slices == my_slice:
     clique        = cliques[i]
     print "starting %d %s"%(i, str(clique))
     for subclique in subcombine(clique):
