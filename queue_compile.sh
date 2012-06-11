@@ -41,7 +41,7 @@ done
 # fourth step, enumerate valid and consistent cliques
 for i in {0..399}
 do
-  $QSUB -N extract_cliques$JOBSUFFIX -hold_jid prune_subgraphs$JOBSUFFIX bash wrap_compile.sh sage_pure extract_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
+  $QSUB -N extract_cliques$JOBSUFFIX -hold_jid prune_subgraphs$JOBSUFFIX bash wrap_compile.sh python extract_cliques.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # fifth step, deduplicate and sort cliques by size

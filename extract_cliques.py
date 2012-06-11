@@ -5,7 +5,7 @@
 
 import pickle, os, sys, time, operator, itertools
 import networkx as nx
-from solution import Solution
+from inequality_decider import InequalityDecider
 from state import State
 from problem import *
 
@@ -54,9 +54,9 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
         # we dont need to process a subclique in case a super-clique has been found to be consistent
         if not any(subclique < c for c in consistents):
           cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), subclique)
-          solution      = Solution(problem_def, cycle_mapping)
-          solution.solve()
-          if solution.satisfiable():
+          decider = InequalityDecider()
+          decider.add_cycle_mapping(problem_def, cycle_mapping)
+          if decider.satisfiable():
             print "  is consistent %s"%str(subclique)
             consistents.add(subclique)
             output.add(subclique)
