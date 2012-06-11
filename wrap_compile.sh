@@ -1,18 +1,7 @@
 #!/bin/sh
 ulimit -v 10000000
 
-case $1 in
-  python)
-    /usr/nld/python-2.7.2/bin/python ${@:2}
-    ;;
-  sage_pure)
-    /usr/nld/sage-4.8-fat-x86_64-Linux/sage ${@:2}
-    ;;
-  *)
-    echo "invalid command" 1>&2
-    exit
-    ;;
-esac
+/usr/nld/python-2.7.2/bin/python ${@:2} $SGE_TASK_ID
 
 xs=$?
 if [ $xs -gt 127 ]; then
