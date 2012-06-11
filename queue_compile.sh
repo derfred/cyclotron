@@ -23,7 +23,7 @@ QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderr
 # first step, building association graph
 for i in {0..399}
 do
- $QSUB -N build_associations$JOBSUFFIX bash wrap_compile.sh sage build_graph.sage $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
+ $QSUB -N build_associations$JOBSUFFIX bash wrap_compile.sh python build_graph.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN $i
 done
 
 # second step, induce subgraphs

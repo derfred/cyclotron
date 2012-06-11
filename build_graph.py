@@ -5,7 +5,7 @@
 
 from state import State
 from problem import *
-from solution import Solution
+from inequality_decider import InequalityDecider
 import itertools, time, operator, sys, os, string, pickle
 
 problem_def = read_problem_definition(sys.argv[1])
@@ -29,10 +29,10 @@ def cycles_compatible(left, right):
     return False
   else:
     # there is some overlap, we need to evaluate pairwise consistency explicitly
-    cycle_mapping = map(lambda c: (c[0], cycles[c[1]]), [left, right])
-    solution      = Solution(problem_def, cycle_mapping)
-    solution.solve()
-    return solution.satisfiable()
+    decider = InequalityDecider()
+    decider.add_cycle(problem_def, left[0], cycles[left[1]])
+    decider.add_cycle(problem_def, right[0], cycles[right[1]])
+    return decider.satisfiable()
 
 def index(comb):
   return comb[1]+comb[0]*len(cycles)

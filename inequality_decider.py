@@ -29,11 +29,14 @@ class InequalityDecider:
         self.pairs[p] = set()
       self.pairs[p].add(s)
 
+  def add_cycle(self, problem, result, cycle):
+    for input in problem[result]:
+      for state, to in zip(cycle, cycle[1:] + cycle[:1]):
+        self.add(state, to, input)
+
   def add_cycle_mapping(self, problem, mapping):
     for result, cycle in mapping:
-      for input in problem[result]:
-        for state, to in zip(cycle, cycle[1:] + cycle[:1]):
-          self.add(state, to, input)
+      self.add_cycle(problem, result, cycle)
 
   def _construct_graph(self):
     graph = nx.DiGraph()

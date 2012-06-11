@@ -4,7 +4,7 @@
 #
 
 import pickle, sys, os, itertools, operator
-from inequality_decider import *
+from inequality_decider import InequalityDecider
 from problem import *
 from state import State
 import networkx as nx
