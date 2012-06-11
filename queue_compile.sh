@@ -22,16 +22,16 @@ rm $BASE/$PROBLEM/stderrs/*
 QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderrs/"
 
 # first step, building association graph
-$QSUB -t 0-399 -N build_associations$JOBSUFFIX bash wrap_compile.sh build_graph.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
+$QSUB -t 1-400 -N build_associations$JOBSUFFIX bash wrap_compile.sh build_graph.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
 
 # second step, induce subgraphs
-$QSUB -t 0-399 -N induce_subgraphs$JOBSUFFIX -hold_jid build_associations$JOBSUFFIX bash wrap_compile.sh induce_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
+$QSUB -t 1-400 -N induce_subgraphs$JOBSUFFIX -hold_jid build_associations$JOBSUFFIX bash wrap_compile.sh induce_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
 
 # third step, remove nodes which are not part of a valid clique
-$QSUB -t 0-399 -N prune_subgraphs$JOBSUFFIX -hold_jid induce_subgraphs$JOBSUFFIX bash wrap_compile.sh prune_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
+$QSUB -t 1-400 -N prune_subgraphs$JOBSUFFIX -hold_jid induce_subgraphs$JOBSUFFIX bash wrap_compile.sh prune_subgraphs.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
 
 # fourth step, enumerate valid and consistent cliques
-$QSUB -t 0-399 -N extract_cliques$JOBSUFFIX -hold_jid prune_subgraphs$JOBSUFFIX bash wrap_compile.sh extract_cliques.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
+$QSUB -t 1-400 -N extract_cliques$JOBSUFFIX -hold_jid prune_subgraphs$JOBSUFFIX bash wrap_compile.sh extract_cliques.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN
 
 # fifth step, deduplicate and sort cliques by size
 $QSUB -N dedup_cliques$JOBSUFFIX -hold_jid extract_cliques$JOBSUFFIX bash wrap_compile.sh deduplicate_cliques.py $BASE/$PROBLEM cliques unique_cliques

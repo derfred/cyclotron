@@ -1,7 +1,8 @@
 #!/bin/sh
 ulimit -v 10000000
 
-/usr/nld/python-2.7.2/bin/python ${@:2} $SGE_TASK_ID
+$MYSLICE=expr $SGE_TASK_ID - 1
+/usr/nld/python-2.7.2/bin/python ${@:2} $MYSLICE
 
 xs=$?
 if [ $xs -gt 127 ]; then

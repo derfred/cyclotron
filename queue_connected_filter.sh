@@ -15,5 +15,5 @@ for d in `ls $BASE/$PROBLEM/unique_cliques`
 do
   mkdir -p $BASE/$PROBLEM/connected_cliques/${d/.pickle/}
   mkdir -p $BASE/$PROBLEM/potentially_connected_cliques/${d/.pickle/}
-  $QSUB -t 0-399 -N filter_connected_cliques$JOBSUFFIX bash wrap_compile.sh python filter_connected_cliques.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/}
+  $QSUB -t 1-400 -N filter_connected_cliques$JOBSUFFIX bash wrap_compile.sh filter_connected_cliques.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/}
 done
