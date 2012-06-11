@@ -58,7 +58,7 @@ for vertex in itertools.product(problem_def.keys(), xrange(len(cycles))):
           decider.add_cycle_mapping(problem_def, cycle_mapping)
           if decider.satisfiable():
             print "  is consistent %s"%str(subclique)
-            consistents.add(subclique)
+            consistents.add(tuple(sorted(subclique, key=index)))
             output.add(subclique)
 
 with open("%s/cliques/%d.pickle"%(basedir, my_slice), "w") as f:
