@@ -18,6 +18,38 @@ def make_pairs(ineq):
   for m1, m2, s in [ (0,1,2), (1,2,0), (2,0,1) ]:
     yield ( (ineq[m1], ineq[m2]), ineq[s] )
 
+class InequalityPrinter:
+  def __init__(self):
+    self.ineqs = set()
+
+  def add(self, prev, next, input):
+    ineq = extract_inequality(prev, next, input)
+    self.ineqs.add(ineq)
+
+  def add_cycle(self, problem, result, cycle):
+    for input in problem[result]:
+      for state, to in zip(cycle, cycle[1:] + cycle[:1]):
+        self.add(state, to, input)
+
+  def add_cycle_mapping(self, problem, mapping):
+    for result, cycle in mapping:
+      self.add_cycle(problem, result, cycle)
+
+  def print_mathematica(self):
+    def escape(param):
+      # Mathematica doesnt like I
+      return param.replace("I", "J")
+    params = set()
+    result = set()
+    for ineq in self.ineqs:
+      params.add(escape(ineq[0][1]))
+      params.add(escape(ineq[1][1]))
+      params.add(escape(ineq[2][1]))
+
+      result.add("(%d)*%s + (%d)*%s + (%d)*%s > 0"%(ineq[0][0], escape(ineq[0][1]), ineq[1][0], escape(ineq[1][1]), ineq[2][0], escape(ineq[2][1])))
+
+    print "FindInstance[%s, {%s}, Reals]"%(string.join(result, "&&"), string.join(params, ","))
+
 class InequalityDecider:
   def __init__(self):
     self.pairs = {}
