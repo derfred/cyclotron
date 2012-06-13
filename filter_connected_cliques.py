@@ -20,6 +20,9 @@ with open("cycles.pickle") as f:
 with open("%s/unique_cliques/%d.pickle"%(basedir, clique_size)) as f:
   cliques = pickle.load(f)
 
+def index(comb):
+  return comb[1]+comb[0]*len(cycles)
+
 def find_possible_transitions(base_decider, my_cycles, input):
   all_states = set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"])))
   for state in all_states-set(itertools.chain(*my_cycles)):

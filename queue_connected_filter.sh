@@ -8,6 +8,8 @@ PROBLEM=$2
 MAXLEN=$3
 JOBSUFFIX=$4
 
+rm $BASE/$PROBLEM/stderrs/filter_connected_cliques*
+
 QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderrs/"
 
 # step six, filter incomplete cliques
