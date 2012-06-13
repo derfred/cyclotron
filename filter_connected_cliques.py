@@ -111,7 +111,7 @@ def connected(graphs):
 def subcombine(clique, center_vertex=None):
   # dont remove the center vertex
   redundant_assignments = filter(lambda l: len(l) > 1, map(lambda r: filter(lambda a: a[0] == r and a != center_vertex, clique), problem_def.keys()))
-  children              = list(itertools.chain(*map(lambda c: subcombine(clique-frozenset([c]), center_vertex), itertools.chain(*redundant_assignments))))
+  children              = list(itertools.chain(*map(lambda c: subcombine(frozenset(clique)-frozenset([c]), center_vertex), itertools.chain(*redundant_assignments))))
   # use list/set to remove duplicates
   return sorted(list(set([clique] + children)), key=len, reverse=True)
 
@@ -129,10 +129,10 @@ for i in xrange(len(cliques)):
       graphs = potentially_connected(subclique)
       if graphs:
         print " is potentially connected %s"%str(subclique)
-        potentially.add(subclique)
+        potentially.add(tuple(sorted(subclique, key=index)))
         if connected(graphs):
           print "  got a winner %s"%str(subclique)
-          output.add(subclique)
+          output.add(tuple(sorted(subclique, key=index)))
 
 with open("%s/potentially_connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
   pickle.dump(potentially, f)
