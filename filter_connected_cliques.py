@@ -23,20 +23,20 @@ with open("%s/unique_cliques/%d.pickle"%(basedir, clique_size)) as f:
 def index(comb):
   return comb[1]+comb[0]*len(cycles)
 
-def find_possible_transitions(base_decider, my_cycles, input):
+def find_possible_transitions(decider, my_cycles, input):
   all_states = set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"])))
   for state in all_states-set(itertools.chain(*my_cycles)):
     for out_state in State.graph[state]:
-      if base_decider.satisfiable_with(state, out_state, input):
+      if decider.satisfiable_with_transition(state, out_state, input):
         yield (state, out_state)
 
-def build_transition_graph(base_decider, my_cycles, input):
+def build_transition_graph(decider, my_cycles, input):
   graph = nx.DiGraph()
   for cycle in my_cycles:
     for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
       graph.add_edge(prev, next)
 
-  for prev, next in find_possible_transitions(base_decider, my_cycles, input):
+  for prev, next in find_possible_transitions(decider, my_cycles, input):
     graph.add_edge(prev, next)
 
   return graph
@@ -47,13 +47,12 @@ def potentially_connected(clique):
 
   decider = InequalityDecider()
   decider.add_cycle_mapping(problem_def, cycle_mapping)
-  base_decider = decider.freeze()
 
   for result, inputs in problem_def.iteritems():
     my_cycles    = tuple(map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping)))
     other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
     for input in inputs:
-      graph = build_transition_graph(base_decider, my_cycles, input)
+      graph = build_transition_graph(decider, my_cycles, input)
       if graph.number_of_edges() == 0:
         return False
 
