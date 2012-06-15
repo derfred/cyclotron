@@ -12,7 +12,7 @@ def extract_inequality(prev, next, input):
     return ( (1, currents[0]), (-1, currents[1]), (-1, prev) )
 
 def sortedtuple(term):
-  return tuple(map(operator.itemgetter(1), sorted(term, key=operator.itemgetter(1))))
+  return tuple(map(operator.itemgetter(1), sorted(term, key=operator.itemgetter(0), reverse=True)))
 
 def trivially_inconsistent(ineq1, ineq2):
   return all(l[0] == -1*r[0] and l[1] == r[1] for l, r in zip(ineq1, ineq2))
@@ -52,7 +52,7 @@ class InequalityStore:
   def add_cycle(self, problem, result, cycle):
     for input in problem[result]:
       for state, to in zip(cycle, cycle[1:] + cycle[:1]):
-        self.add(state, to, input)
+        self.add_transition(state, to, input)
 
   def add_cycle_mapping(self, problem, mapping):
     for result, cycle in mapping:
@@ -101,7 +101,6 @@ class InequalityDecider(InequalityStore):
           # previous kind were added
           potential_constraints = potentially_constrained_variables(ineq, other)
           if potential_constraints:
-            print potential_constraints
             self.inequalities.add_edge(ineq, other, relation="potentially_constraining", potential_constraints=potential_constraints)
 
     # finally in case these this inequality does not interact at all
@@ -111,10 +110,6 @@ class InequalityDecider(InequalityStore):
     return filter(lambda e: self.inequalities.edge[e[0]][e[1]]['relation'] == relation, self.inequalities.edges_iter())
 
   def _construct_graph(self):
-    def add_inequalities(graph, ineq, potentials):
-      if ineq in potentials:
-        pass
-
     result = nx.DiGraph()
 
     # first extract first level implied inequalities
@@ -124,13 +119,16 @@ class InequalityDecider(InequalityStore):
 
     # cache potential constraints for later
     second_level = collections.defaultdict(set)
-    for potential in self._edges_by_relation("potentially_constraining"):
-      for k, v in potential['potential_constraints'].iteritems():
+    for p in self._edges_by_relation("potentially_constraining"):
+      for k, v in self.inequalities.edge[p[0]][p[1]]['potential_constraints'].iteritems():
         second_level[k].add(v)
 
-    # now recursively add inequalities from those implied by the first level
-    for ineq in inequalities_from_graph(result):
-      add_inequalities(result, ineq, second_level)
+    # now add inequalities from those implied by the first level
+    # TODO: check whether this needs to be done recursively
+    for edge in result.edges():
+      if edge in second_level:
+        for ineq in second_level[edge]:
+          result.add_edge(*ineq)
 
     return result
 
@@ -138,21 +136,5 @@ class InequalityDecider(InequalityStore):
     if len(self._edges_by_relation('conflicting')) > 0:
       return False
 
-    param_dependencies = self._construct_graph()
-    return True
+    return nx.is_directed_acyclic_graph(self._construct_graph())
 
-decider = NewInequalityDecider()
-
-decider.add("baabc", "acbab", ("I", "B2", "B3", "I", "I"))
-decider.add("baabc", "abcab", ("I", "B2", "A3", "I", "I"))
-
-decider.add("ababc", "cabab", ("A1", "I", "A3", "I", "I"))
-decider.add("ababc", "bacab", ("B1", "I", "B3", "I", "I"))
-
-
-
-print decider.satisfiable()
-
-# h = nx.to_agraph(decider._construct_graph())
-h = nx.to_agraph(decider.inequalities)
-h.draw("q.png", prog="dot")
