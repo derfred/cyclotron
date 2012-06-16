@@ -25,17 +25,24 @@ def index(comb):
 
 def find_choice_points(graphs):
   result = set()
-  for d, g in graphs.iteritems():
-    for n in g.nodes_iter():
-      if len(g.successors(n)) == 2:
-        for succ in g.successors(n):
-          result.add( (n, succ, d[1]) )
+  for data, graph in graphs.iteritems():
+    for node in graph.nodes_iter():
+      if len(graph.successors(node)) == 2:
+        for succ in graph.successors(n):
+          result.add( (node, succ, d[1]) )
   return result
 
 def choose_transitions(cycle_mapping, chosen):
   graphs = potentially_connected(problem_def, cycle_mapping, chosen)
   if not graphs:
     return
+
+  # since the target cycles are always present, if the total number of cycles in the
+  # graph is equal to the number of target cycles, there are no other invalid cycles
+  if all(len(data[2]) == len(nx.simple_cycles(graph)) for data, graph in graphs.iteritems()):
+    # this setup only exhibits valid cycles, even though its not fully determined
+    # thats also a valid result
+    return [chosen]
 
   choice_points = find_choice_points(graphs)
   if len(choice_points) == 0:
