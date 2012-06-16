@@ -45,8 +45,9 @@ def potentially_connected(clique):
   graphs = {}
   cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
 
-  decider = InequalityDecider()
-  decider.add_cycle_mapping(problem_def, cycle_mapping)
+  base_decider = InequalityDecider()
+  base_decider.add_cycle_mapping(problem_def, cycle_mapping)
+  decider      =  base_decider.freeze()
 
   for result, inputs in problem_def.iteritems():
     my_cycles    = tuple(map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping)))

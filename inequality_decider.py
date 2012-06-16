@@ -41,6 +41,30 @@ def potentially_constrained_variables(ineq1, ineq2):
   left, right = free_variables
   return { invert(left): sortedtuple(right), invert(right): sortedtuple(left) }
 
+def identify_relations(self, existing, ineq):
+  trivials              = set()
+  constraints           = set()
+  potential_constraints = collections.defaultdict(set)
+  for other in existing:
+    if trivially_inconsistent(other, ineq):
+      # this is a trivial inconsistency, no need to proceed
+      trivials.add( (other, ineq) )
+    else:
+      # no trivial inconsistency detected
+      constraint = constrained_variable(ineq, other)
+      if constraint:
+        # these two inequalities share two variables in such a way 
+        # that they imply an inequality between two other variables
+        constraints.add( constraint )
+      else:
+        # now check if this relation could imply a constraint if a constraint of the
+        # previous kind were added
+        potentials = potentially_constrained_variables(ineq, other)
+        if potentials:
+          for k, v in potentials.iteritems():
+            potential_constraints[k].add(v)
+  return (trivials, constraints, potential_constraints)
+
 class InequalityStore:
   # override this in subclasses
   def add(self, ineq):
@@ -82,66 +106,72 @@ class InequalityPrinter(InequalityStore):
 
 class InequalityDecider(InequalityStore):
   def __init__(self):
-    self.inequalities = nx.Graph()
+    self.ineqs                 = set()
+    self.trivials              = set()
+    self.constraints           = set()
+    self.potential_constraints = collections.defaultdict(set)
 
-  def _add_to_ineq_graph(self, graph, ineq):
-    for other in graph.nodes():
-      if trivially_inconsistent(other, ineq):
-        # this is a trivial inconsistency, no need to proceed
-        graph.add_edge(ineq, other, relation="conflicting")
-      else:
-        # no trivial inconsistency detected
-        constraint = constrained_variable(ineq, other)
-        if constraint:
-          # these two inequalities share two variables in such a way 
-          # that they imply an inequality between two other variables
-          graph.add_edge(ineq, other, relation="constraining", constraint=constraint)
-        else:
-          # now check if this relation could imply a constraint if a constraint of the
-          # previous kind were added
-          potential_constraints = potentially_constrained_variables(ineq, other)
-          if potential_constraints:
-            graph.add_edge(ineq, other, relation="potentially_constraining", potential_constraints=potential_constraints)
-
-    # finally in case these this inequality does not interact at all
-    graph.add_node(ineq)
+  def identify_relations(self, ineq):
+    return identify_relations(self.ineqs, ineq)
 
   def add(self, ineq):
-    self._add_to_ineq_graph(self.inequalities, ineq)
+    trivials, constraints, potential_constraints = self.identify_relations(ineq)
 
-  def _edges_by_relation(self, graph, relation):
-    return filter(lambda e: graph.edge[e[0]][e[1]]['relation'] == relation, graph.edges_iter())
+    self.trivials.update(trivials)
+    self.constraints.update(constraints)
+    for k, v in potential_constraints:
+      self.potential_constraints[k].update(v)
+
+    self.ineqs.add(ineq)
 
   def _construct_graph(self, graph):
     result = nx.DiGraph()
 
-    # first extract first level implied inequalities
-    for n1, n2 in self._edges_by_relation(graph, "constraining"):
-      high, low = graph.edge[n1][n2]['constraint']
-      result.add_edge(high, low)
+    # go through each first level constraint, add an edge for it
+    # then check whether those edges imply a second level constraint
+    for constraint in self.constraints:
+      result.add_edge(*constraint)
+      if constraint in self.potential_constraints:
+        for high, low in self.potential_constraints[constraint]:
+          result.add_edge(high, low)
 
-    # cache potential constraints for later
-    second_level = collections.defaultdict(set)
-    for p in self._edges_by_relation(graph, "potentially_constraining"):
-      for k, v in graph.edge[p[0]][p[1]]['potential_constraints'].iteritems():
-        second_level[k].add(v)
-
-    # now add inequalities from those implied by the first level
-    # TODO: check whether this needs to be done recursively
-    for edge in result.edges():
-      if edge in second_level:
-        for ineq in second_level[edge]:
-          result.add_edge(*ineq)
+    # TODO: check whether the previous step needs to be done recursively
+    # ie. check for potential constraints that become active because
+    # of the activation of other potential constraints (are there levels higher than 2??)
 
     return result
 
   def satisfiable(self):
-    if len(self._edges_by_relation(self.inequalities, 'conflicting')) > 0:
+    if len(self.trivials) > 0:
       return False
 
-    return nx.is_directed_acyclic_graph(self._construct_graph(self.inequalities))
+    return nx.is_directed_acyclic_graph(self._construct_graph())
+
+  def freeze(self):
+    return FrozenDecider(self)
+
+class FrozenDecider:
+  def __init__(self, parent):
+    self.parent = parent
+    self.graph  = parent._construct_graph()
 
   def satisfiable_with_transition(self, prev, next, input):
-    graph = self.inequalities.copy()
-    self._add_to_ineq_graph(graph, extract_inequality(prev, next, input))
-    return nx.is_directed_acyclic_graph(self._construct_graph(graph))
+    ineq = extract_inequality(prev, next, input)
+    trivials, constraints, potential_constraints = parent.identify_relations(ineq)
+
+    if len(trivials) > 0:
+      return False
+
+    graph = self.graph.copy()
+    for constraint in constraints:
+      # see if adding this edge would cause a loop
+      if nx.has_path(graph, constraint[1], constraint[0]):
+        return False
+      graph.add_edge(*constraint)
+
+    for k, v in potential_constraints.iteritems():
+      if nx.has_path(graph, *k):
+        if nx.has_path(graph, v[1], v[0]):
+          return False
+        graph.add_edge(*v)
+    return True
