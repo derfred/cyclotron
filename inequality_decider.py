@@ -41,7 +41,7 @@ def potentially_constrained_variables(ineq1, ineq2):
   left, right = free_variables
   return { invert(left): sortedtuple(right), invert(right): sortedtuple(left) }
 
-def identify_relations(self, existing, ineq):
+def identify_relations(existing, ineq):
   trivials              = set()
   constraints           = set()
   potential_constraints = collections.defaultdict(set)
