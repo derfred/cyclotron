@@ -173,3 +173,46 @@ class FrozenDecider:
           graph.add_edge(*constraint)
 
     return nx.is_directed_acyclic_graph(graph)
+
+  def find_possible_transitions(self, in_states, input):
+    for state in in_states:
+      for out_state in State.graph[state]:
+        if self.satisfiable_with_transition(state, out_state, input):
+          yield (state, out_state)
+
+  def build_transition_graph(in_states, input):
+    graph = nx.DiGraph()
+    for cycle in my_cycles:
+      for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
+        graph.add_edge(prev, next)
+
+    for prev, next in self.find_possible_transitions(in_states, input):
+      graph.add_edge(prev, next)
+
+    return graph
+
+def potentially_connected(problem_def, cycle_mapping, additionals=[], shortcut=True):
+  graphs = {}
+
+  base_decider = InequalityDecider()
+  base_decider.add_cycle_mapping(problem_def, cycle_mapping)
+  for transition in additionals:
+    base_decider.add_transition(*transition)
+  decider      =  base_decider.freeze()
+
+  for result, inputs in problem_def.iteritems():
+    my_cycles    = tuple(map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping)))
+    other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
+
+    all_states   = set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"])))
+    other_states = all_states-set(itertools.chain(*my_cycles))
+    for input in inputs:
+      graph      = decider.build_transition_graph(other_states, input)
+      if shortcut and graph.number_of_edges() == 0:
+        return False
+
+      graphs[(result, input, my_cycles)] = graph
+      for state in set(itertools.chain(*other_cycles)) - set(itertools.chain(*my_cycles)):
+        if shortcut and all( nx.has_path(graph, state, cycle[0]) == False for cycle in my_cycles ):
+          return False
+  return graphs
