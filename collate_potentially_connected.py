@@ -10,13 +10,13 @@ basedir = sys.argv[1]
 def index(comb):
   return comb[1]+comb[0]*len(cycles)
 
-files = collections.defaultdict(set)
-for path, dirs, files in os.walk(os.path.abspath("%s/collated_potentially_connected_cliques")):
+all_files = collections.defaultdict(set)
+for path, dirs, files in os.walk(os.path.abspath("%s/collated_potentially_connected_cliques"%basedir)):
   for filename in fnmatch.filter(files, "*.pickle"):
-    files[int(filename.replace(".pickle", ""))].add(os.path.join(path, filename))
+    all_files[int(filename.replace(".pickle", ""))].add(os.path.join(path, filename))
 
 result = collections.defaultdict(set)
-for length, fnames in files.iteritems():
+for length, fnames in all_files.iteritems():
   for fname in fnames:
     with open(fname) as f:
       cliques = pickle.load(f)
