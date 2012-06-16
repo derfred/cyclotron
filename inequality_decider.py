@@ -180,7 +180,7 @@ class FrozenDecider:
         if self.satisfiable_with_transition(state, out_state, input):
           yield (state, out_state)
 
-  def build_transition_graph(in_states, input):
+  def build_transition_graph(self, my_cycles, in_states, input):
     graph = nx.DiGraph()
     for cycle in my_cycles:
       for prev, next in zip(cycle, cycle[1:]+cycle[:1]):
@@ -207,7 +207,7 @@ def potentially_connected(problem_def, cycle_mapping, additionals=[], shortcut=T
     all_states   = set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"])))
     other_states = all_states-set(itertools.chain(*my_cycles))
     for input in inputs:
-      graph      = decider.build_transition_graph(other_states, input)
+      graph      = decider.build_transition_graph(my_cycles, other_states, input)
       if shortcut and graph.number_of_edges() == 0:
         return False
 
