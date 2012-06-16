@@ -32,8 +32,8 @@ def find_choice_points(graphs):
           result.add( (n, succ, d[1]) )
   return result
 
-def choose_transitions(clique, chosen):
-  graphs = potentially_connected(clique, chosen)
+def choose_transitions(cycle_mapping, chosen):
+  graphs = potentially_connected(problem_def, cycle_mapping, chosen)
   if not graphs:
     return
 
@@ -45,7 +45,7 @@ def choose_transitions(clique, chosen):
 
   result = []
   for choice in choice_points:
-    out = extend_transitions(clique, chosen+[choice])
+    out = choose_transitions(cycle_mapping, chosen+[choice])
     if out:
       result += out
   return result
@@ -60,7 +60,8 @@ for i in xrange(len(cliques)):
   if i % total_slices == my_slice:
     clique        = cliques[i]
     print "starting %d %s"%(i, str(clique))
-    for choices in choose_transitions(clique, []):
+    cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
+    for choices in choose_transitions(cycle_mapping, []):
       print "have one"
       result.append( (clique, choices) )
 

@@ -9,7 +9,7 @@ MAXLEN=$3
 JOBSUFFIX=$4
 
 mkdir -p $BASE/$PROBLEM/stderrs
-rm $BASE/$PROBLEM/stderrs/filter_connected_cliques*
+rm $BASE/$PROBLEM/stderrs/filter_*_connected_cliques*
 
 QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderrs/"
 
