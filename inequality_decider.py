@@ -124,7 +124,7 @@ class InequalityDecider(InequalityStore):
 
     self.ineqs.add(ineq)
 
-  def _construct_graph(self, graph):
+  def _construct_graph(self):
     result = nx.DiGraph()
 
     # go through each first level constraint, add an edge for it
@@ -157,21 +157,17 @@ class FrozenDecider:
 
   def satisfiable_with_transition(self, prev, next, input):
     ineq = extract_inequality(prev, next, input)
-    trivials, constraints, potential_constraints = parent.identify_relations(ineq)
+    trivials, constraints, potential_constraints = self.parent.identify_relations(ineq)
 
     if len(trivials) > 0:
       return False
 
     graph = self.graph.copy()
     for constraint in constraints:
-      # see if adding this edge would cause a loop
-      if nx.has_path(graph, constraint[1], constraint[0]):
-        return False
       graph.add_edge(*constraint)
 
-    for k, v in potential_constraints.iteritems():
-      if nx.has_path(graph, *k):
-        if nx.has_path(graph, v[1], v[0]):
-          return False
-        graph.add_edge(*v)
-    return True
+    for k, constraints in potential_constraints.iteritems():
+      if k[0] in graph and k[1] in graph and nx.has_path(graph, *k):
+        for constraint in constraints:
+          graph.add_edge(*constraint)
+    return nx.is_directed_acyclic_graph(graph)
