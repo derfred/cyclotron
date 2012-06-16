@@ -163,6 +163,7 @@ class FrozenDecider:
       return False
 
     graph = self.graph.copy()
+
     for constraint in constraints:
       graph.add_edge(*constraint)
 
@@ -170,4 +171,5 @@ class FrozenDecider:
       if k[0] in graph and k[1] in graph and nx.has_path(graph, *k):
         for constraint in constraints:
           graph.add_edge(*constraint)
+
     return nx.is_directed_acyclic_graph(graph)
