@@ -56,50 +56,82 @@ def find_choice_points(graphs):
 
 def find_effective_choice_points(graph, my_cycles):
   other_cycles  = filter_cycles(nx.simple_cycles(graph), my_cycles)
-  result = set()
-  choices = find_choice_points_for_graph(graph)
-  for choice, cycle in itertools.product(choices, other_cycles):
-    if choice[0] in cycle and choice not in zip(cycle, cycle[1:]+cycle[:1]):
-      result.add(choice)
+  result  = []
+  for choice in find_choice_points_for_graph(graph):
+    total = 0
+    for cycle in other_cycles:
+      if choice[0] in cycle and choice not in zip(cycle, cycle[1:]+cycle[:1]):
+        total += 1
+    result.append( (total, choice) )
   return result
 
 def effective_choice_points(graphs):
   result = []
   for data, graph in graphs.iteritems():
-    for choice in find_effective_choice_points(graph, data[2]):
-      result.append( (choice[0], choice[1], data[1]) )
-  return result
+    for uses, choice in find_effective_choice_points(graph, data[2]):
+      result.append( (uses, (choice[0], choice[1], data[1])) )
+  return map(operator.itemgetter(1), sorted(result, key=operator.itemgetter(0), reverse=True))
 
 
-def choose_transitions(cycle_mapping, chosen, effectives=None):
-  graphs = potentially_connected(problem_def, cycle_mapping, chosen)
-  if not graphs:
-    print "end @", len(chosen)
-    return
+def excluded(impossibles, choice):
+  for d in sorted(impossibles.keys()):
+    if d < 5 and d < len(choice):
+      for impossible in impossibles[d]:
+        if frozenset(choice) < impossible:
+          return True
+  return False
 
-  if not effectives:
-    effectives = effective_choice_points(graphs)
-
+def valid_solution(graphs, choice_points):
   # since the target cycles are always present, if the total number of cycles in the
   # graph is equal to the number of target cycles, there are no other invalid cycles
   if all(len(data[2]) == len(nx.simple_cycles(graph)) for data, graph in graphs.iteritems()):
     # this setup only exhibits valid cycles, even though its not fully determined
     # thats also a valid result
-    return [chosen]
+    return True
 
-  choice_points = find_choice_points(graphs)
   if len(choice_points) == 0:
     # the system is fully determined and its still connected
     # this should be a winner!
-    return [chosen]
+    return True
+  return False
 
-  result = []
-  for choice in choice_points:
-    if choice in effectives and (len(chosen) == 0 or effectives.index(choice) > effectives.index(chosen[-1])):
-      out = choose_transitions(cycle_mapping, chosen+[choice], effectives)
-      if out:
-        result += out
-  return result
+def choose(effectives):
+  queue       = collections.deque(map(lambda e: [e], effectives))
+  level_size  = { 1: len(effectives) }
+  impossibles = collections.defaultdict(set)
+  start       = time.time()
+  while len(queue) > 0:
+    chosen = queue.popleft()
+
+    # print tuple(map(lambda c: effectives.index(c), chosen))
+
+    if len(chosen) not in level_size and len(chosen) > 1:
+      print "checked  @", len(chosen)-1, level_size[len(chosen)-1]
+      print "excluded @", len(chosen)-1, len(impossibles[len(chosen)-1])
+      print "time     @", len(chosen)-1, (time.time()-start)/60
+      start = time.time()
+      level_size[len(chosen)] = 0
+
+    level_size[len(chosen)] += 1
+
+    graphs = potentially_connected(problem_def, cycle_mapping, chosen)
+    if not graphs:
+      impossibles[len(chosen)].add( frozenset(map(lambda c: effectives.index(c), chosen)) )
+      continue
+
+    choice_points = find_choice_points(graphs)
+
+    if valid_solution(graphs, choice_points):
+      yield chosen
+      continue
+
+    for choice in effectives:
+      if choice not in choice_points and choice not in chosen and effectives.index(choice) < effectives.index(chosen[-1]):
+        impossibles[len(chosen)+1].add( frozenset(map(lambda c: effectives.index(c), chosen)+[effectives.index(choice)]) )
+
+    for choice in choice_points:
+      if choice in effectives and effectives.index(choice) < effectives.index(chosen[-1]) and not excluded(impossibles, choice):
+        queue.append( chosen+[choice] )
 
 
 total_slices = 399
@@ -112,9 +144,10 @@ for i in xrange(len(cliques)):
     clique        = cliques[i]
     print "starting %d %s"%(i, str(clique))
     cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
-    for choices in choose_transitions(cycle_mapping, []):
+    graphs        = potentially_connected(problem_def, cycle_mapping)
+    for chosen in choose(effective_choice_points(graphs)):
       print "have one"
-      result.append( (clique, choices) )
+      result.append( (clique, chosen) )
       with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
         pickle.dump(result, f)
 
