@@ -138,6 +138,7 @@ total_slices = 399
 my_slice     = int(sys.argv[5])
 
 result       = list()
+disconnected = list()
 
 for i in xrange(len(cliques)):
   if i % total_slices == my_slice:
@@ -145,11 +146,21 @@ for i in xrange(len(cliques)):
     print "starting %d %s"%(i, str(clique))
     cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
     graphs        = potentially_connected(problem_def, cycle_mapping)
+    connected     = False
     for chosen in choose(effective_choice_points(graphs)):
       print "have one"
+      connected   = True
       result.append( (clique, chosen) )
       with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
         pickle.dump(result, f)
+    if not connected:
+      disconnected.append(clique)
+      with open("%s/disconnected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
+        pickle.dump(disconnected, f)
+
 
 with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
   pickle.dump(result, f)
+
+with open("%s/disconnected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
+        pickle.dump(disconnected, f)
