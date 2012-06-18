@@ -23,19 +23,62 @@ with open("%s/unique_potentially_connected_cliques/%d.pickle"%(basedir, clique_s
 def index(comb):
   return comb[1]+comb[0]*len(cycles)
 
+def same_cycles(cycle1, cycle2):
+  if len(cycle1) != len(cycle2):
+    return False
+
+  for i in xrange(len(cycle1)):
+    if cycle1[i:] + cycle1[:i] == cycle2:
+      return True
+  return False
+
+def filter_cycles(all_cycles, remove):
+  result = []
+  for cycle in all_cycles:
+    if not any(same_cycles(my_cycle, tuple(cycle[:-1])) for my_cycle in remove):
+      result.append(cycle)
+  return result
+
+def find_choice_points_for_graph(graph):
+  result = set()
+  for node in graph.nodes_iter():
+    if len(graph.successors(node)) == 2:
+      for succ in graph.successors(node):
+        result.add( (node, succ) )
+  return result
+
 def find_choice_points(graphs):
   result = set()
   for data, graph in graphs.iteritems():
-    for node in graph.nodes_iter():
-      if len(graph.successors(node)) == 2:
-        for succ in graph.successors(n):
-          result.add( (node, succ, d[1]) )
+    for choice in find_choice_points_for_graph(graph):
+      result.add( (choice[0], choice[1], data[1]) )
   return result
 
-def choose_transitions(cycle_mapping, chosen):
+def find_effective_choice_points(graph, my_cycles):
+  other_cycles  = filter_cycles(nx.simple_cycles(graph), my_cycles)
+  result = set()
+  choices = find_choice_points_for_graph(graph)
+  for choice, cycle in itertools.product(choices, other_cycles):
+    if choice[0] in cycle and choice not in zip(cycle, cycle[1:]+cycle[:1]):
+      result.add(choice)
+  return result
+
+def effective_choice_points(graphs):
+  result = []
+  for data, graph in graphs.iteritems():
+    for choice in find_effective_choice_points(graph, data[2]):
+      result.append( (choice[0], choice[1], data[1]) )
+  return result
+
+
+def choose_transitions(cycle_mapping, chosen, effectives=None):
   graphs = potentially_connected(problem_def, cycle_mapping, chosen)
   if not graphs:
+    print "end @", len(chosen)
     return
+
+  if not effectives:
+    effectives = effective_choice_points(graphs)
 
   # since the target cycles are always present, if the total number of cycles in the
   # graph is equal to the number of target cycles, there are no other invalid cycles
@@ -52,9 +95,10 @@ def choose_transitions(cycle_mapping, chosen):
 
   result = []
   for choice in choice_points:
-    out = choose_transitions(cycle_mapping, chosen+[choice])
-    if out:
-      result += out
+    if choice in effectives and (len(chosen) == 0 or effectives.index(choice) > effectives.index(chosen[-1])):
+      out = choose_transitions(cycle_mapping, chosen+[choice], effectives)
+      if out:
+        result += out
   return result
 
 
@@ -71,6 +115,8 @@ for i in xrange(len(cliques)):
     for choices in choose_transitions(cycle_mapping, []):
       print "have one"
       result.append( (clique, choices) )
+      with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
+        pickle.dump(result, f)
 
 with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
   pickle.dump(result, f)
