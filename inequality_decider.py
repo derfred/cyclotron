@@ -119,7 +119,7 @@ class InequalityDecider(InequalityStore):
 
     self.trivials.update(trivials)
     self.constraints.update(constraints)
-    for k, v in potential_constraints:
+    for k, v in potential_constraints.iteritems():
       self.potential_constraints[k].update(v)
 
     self.ineqs.add(ineq)
@@ -154,6 +154,30 @@ class FrozenDecider:
   def __init__(self, parent):
     self.parent = parent
     self.graph  = parent._construct_graph()
+
+  def satisfiable_with_ineqs(self, ineqs):
+    base_ineqs = set(list(self.parent.ineqs)) # to copy
+    cons       = list()
+    for ineq in ineqs:
+      cons.append(identify_relations(base_ineqs, ineq))
+      base_ineqs.add(ineq)
+
+    if any(len(t[0]) > 0 for t in cons):
+      return False
+
+    graph = self.graph.copy()
+
+    for constraints in map(operator.itemgetter(1), cons):
+      for constraint in constraints:
+        graph.add_edge(*constraint)
+
+    for potential_constraints in map(operator.itemgetter(2), cons):
+      for k, constraints in potential_constraints.iteritems():
+        if k[0] in graph and k[1] in graph and nx.has_path(graph, *k):
+          for constraint in constraints:
+            graph.add_edge(*constraint)
+
+    return nx.is_directed_acyclic_graph(graph)
 
   def satisfiable_with_transition(self, prev, next, input):
     ineq = extract_inequality(prev, next, input)
