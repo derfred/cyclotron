@@ -7,6 +7,7 @@ import pickle, sys, os, itertools, operator
 from inequality_decider import InequalityDecider
 from problem import *
 from state import State
+import networkx as nx
 
 problem_def = read_problem_definition(sys.argv[1])
 basedir     = sys.argv[2]
@@ -27,8 +28,9 @@ my_slice     = int(sys.argv[5])
 
 def build_potential_graphs(cycle_mapping):
   graphs = {}
-  decider = InequalityDecider()
-  decider.add_cycle_mapping(problem_def, cycle_mapping)
+  base_decider = InequalityDecider()
+  base_decider.add_cycle_mapping(problem_def, cycle_mapping)
+  decider = base_decider.freeze()
   for result, inputs in problem_def.iteritems():
     my_cycles    = tuple(map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping)))
     other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
@@ -45,20 +47,29 @@ for i in xrange(len(cliques)):
   if i % total_slices == my_slice:
     clique        = cliques[i]
     print "starting %d %s"%(i, str(clique))
+    cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
+    decider = InequalityDecider()
+    decider.add_cycle_mapping(problem_def, cycle_mapping)
     if decider.satisfiable():
-      graphs      = build_potential_graphs(decider, cycle_mapping)
+      print " satisfiable"
+      graphs      = build_potential_graphs(cycle_mapping)
 
       good_states = list()
       for state in set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"]))):
-        for input, graph_plus in graphs.iteritems():
-          path = nx.shortest_path(graph_plus[0], state, graph_plus[1])
-          for f, t in zip(path[:-1], path[1:]):
-            decider.add_transition(f, t, input)
+        try:
+          decider = InequalityDecider()
+          decider.add_cycle_mapping(problem_def, cycle_mapping)
+          for input, graph_plus in graphs.iteritems():
+            path = nx.shortest_path(graph_plus[0], state, graph_plus[1])
+            for f, t in zip(path[:-1], path[1:]):
+              decider.add_transition(f, t, input)
 
-        if decider.satisfiable():
-          good_states.append(state)
-
+          if decider.satisfiable():
+            good_states.append(state)
+        except nx.exception.NetworkXNoPath:
+          pass
       if len(good_states) > 0:
+        print " have one"
         result.append( (clique, good_states) )
 
 with open("%s/initializable_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:

@@ -237,6 +237,7 @@ def potentially_connected(problem_def, cycle_mapping, additionals=[], shortcut=T
 
       graphs[(result, input, my_cycles)] = graph
       for state in set(itertools.chain(*other_cycles)) - set(itertools.chain(*my_cycles)):
+        # print state, "->", map(operator.itemgetter(0), my_cycles)
         if shortcut and all( nx.has_path(graph, state, cycle[0]) == False for cycle in my_cycles ):
           return False
   return graphs

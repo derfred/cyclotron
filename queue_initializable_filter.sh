@@ -17,5 +17,7 @@ QSUB="qsub -cwd -V -q frigg.q,skadi.q -b y -o /dev/null -e $BASE/$PROBLEM/stderr
 for d in `ls $BASE/$PROBLEM/unique_cliques`
 do
   mkdir -p $BASE/$PROBLEM/initializable_cliques/${d/.pickle/}
+  mkdir -p $BASE/$PROBLEM/unique_initializable_cliques/${d/.pickle/}
   $QSUB -t 1-400 -N filter_${d/.pickle/}_initializable_cliques$JOBSUFFIX bash wrap_compile.sh filter_initializable_cliques.py $PROBLEM.problem $BASE/$PROBLEM $MAXLEN ${d/.pickle/}
+  $QSUB -N deduplicate_initializable$JOBSUFFIX -hold_jid filter_${d/.pickle/}_initializable_cliques$JOBSUFFIX bash wrap_compile.sh deduplicate_cliques.py $BASE/$PROBLEM initializable_cliques/${d/.pickle/} unique_initializable_cliques/${d/.pickle/}
 done

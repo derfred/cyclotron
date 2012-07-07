@@ -3,7 +3,7 @@
 #  python filter_connected_cliques.py <problem_def> <basedir> <max_len> <clique_size> <worker_index>
 #
 
-import pickle, sys, os, itertools, operator
+import pickle, sys, os, itertools, operator, collections, time
 from inequality_decider import InequalityDecider, potentially_connected
 from problem import *
 from state import State
@@ -49,9 +49,9 @@ def find_choice_points_for_graph(graph):
 
 def find_choice_points(graphs):
   result = set()
-  for data, graph in graphs.iteritems():
+  for input, graph in graphs.iteritems():
     for choice in find_choice_points_for_graph(graph):
-      result.add( (choice[0], choice[1], data[1]) )
+      result.add( (choice[0], choice[1], input) )
   return result
 
 def find_effective_choice_points(graph, my_cycles):
@@ -95,26 +95,83 @@ def valid_solution(graphs, choice_points):
     return True
   return False
 
-def choose(effectives):
-  queue       = collections.deque(map(lambda e: [e], effectives))
-  level_size  = { 1: len(effectives) }
-  impossibles = collections.defaultdict(set)
-  start       = time.time()
+def build_decider(prefix):
+  basedecider = InequalityDecider()
+  basedecider.add_cycle_mapping(problem_def, cycle_mapping)
+  for transition in prefix:
+    basedecider.add_transition(*transition)
+  return basedecider.freeze()
+
+def build_parent_graphs(problem_def, cycle_mapping, decider):
+  graphs = {}
+  for result, inputs in problem_def.iteritems():
+    my_cycles    = map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping))
+    other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
+
+    all_states   = set(map(lambda s: string.join(s, ""), itertools.permutations(["a","a","b","b","c"])))
+    other_states = all_states-set(itertools.chain(*my_cycles))
+    for input in inputs:
+      graph      = decider.build_transition_graph(my_cycles, other_states, input)
+      # now mark the edges for my cycles as they dont need to be tested
+      for cycle in my_cycles:
+        for n, p in zip(cycle, cycle[1:]+cycle[:1]):
+          graph[n][p]["cycle"] = True
+      graphs[input] = graph
+  return graphs
+
+def potentially_connected_graphs(problem_def, cycle_mapping, parentgraphs, decider, extra_transition):
+  graphs = {}
+  for result, inputs in problem_def.iteritems():
+    my_cycles    = map(operator.itemgetter(1), filter(lambda a: a[0]==result, cycle_mapping))
+    other_cycles = map(operator.itemgetter(1), filter(lambda a: a[0]!=result, cycle_mapping))
+    for input in inputs:
+      graph = parentgraphs[input].copy()
+      for n, p in graph.edges():
+        if "cycle" not in graph[n][p] and not decider.satisfiable_with_transitions(set([extra_transition, (n, p, input)])):
+          graph.remove_edge(n, p)
+
+      for state in set(itertools.chain(*other_cycles)) - set(itertools.chain(*my_cycles)):
+        if all( nx.has_path(graph, state, cycle[0]) == False for cycle in my_cycles ):
+          return False
+      graphs[input] = graph
+  return graphs
+
+found = 0
+times = {}
+
+def choose(cycle_mapping, effectives):
+  global found, times
+  queue        = collections.deque(map(lambda e: [e], effectives))
+  level_size   = { 1: len(effectives) }
+  impossibles  = collections.defaultdict(set)
+  start        = time.time()
+
+  decider      = build_decider([])
+  prefix       = []
+  parentgraphs = build_parent_graphs(problem_def, cycle_mapping, decider)
   while len(queue) > 0:
     chosen = queue.popleft()
 
-    # print tuple(map(lambda c: effectives.index(c), chosen))
+    if len(chosen) > 1 and chosen[:-1] != prefix:
+      decider     = build_decider(chosen[:-1])
+      prefix      = chosen[:-1]
+      parentgraphs = build_parent_graphs(problem_def, cycle_mapping, decider)
 
+    # this code is for monitoring performance
     if len(chosen) not in level_size and len(chosen) > 1:
       print "checked  @", len(chosen)-1, level_size[len(chosen)-1]
       print "excluded @", len(chosen)-1, len(impossibles[len(chosen)-1])
       print "time     @", len(chosen)-1, (time.time()-start)/60
+      times[len(chosen)-1] = (time.time()-start)/60
       start = time.time()
       level_size[len(chosen)] = 0
+      with open("%s/status/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
+        pickle.dump((found, len(chosen), times), f)
 
     level_size[len(chosen)] += 1
 
-    graphs = potentially_connected(problem_def, cycle_mapping, chosen)
+    print tuple(map(lambda c: effectives.index(c), chosen))
+    graphs = potentially_connected_graphs(problem_def, cycle_mapping, parentgraphs, decider, chosen[-1])
     if not graphs:
       impossibles[len(chosen)].add( frozenset(map(lambda c: effectives.index(c), chosen)) )
       continue
@@ -123,6 +180,9 @@ def choose(effectives):
 
     if valid_solution(graphs, choice_points):
       yield chosen
+      found += 1
+      with open("%s/status/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
+        pickle.dump((found, len(chosen), times), f)
       continue
 
     for choice in effectives:
@@ -147,7 +207,7 @@ for i in xrange(len(cliques)):
     cycle_mapping = map(lambda c: (c[0], tuple(cycles[c[1]])), clique)
     graphs        = potentially_connected(problem_def, cycle_mapping)
     connected     = False
-    for chosen in choose(effective_choice_points(graphs)):
+    for chosen in choose(cycle_mapping, effective_choice_points(graphs)):
       print "have one"
       connected   = True
       result.append( (clique, chosen) )
@@ -163,4 +223,4 @@ with open("%s/connected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), 
   pickle.dump(result, f)
 
 with open("%s/disconnected_cliques/%d/%d.pickle"%(basedir, clique_size, my_slice), "w") as f:
-        pickle.dump(disconnected, f)
+  pickle.dump(disconnected, f)
